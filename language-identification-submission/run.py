@@ -17,13 +17,16 @@ if __name__ == "__main__":
     targets_validation = tira.pd.truths(
         "nlpbuw-fsu-sose-24", "language-identification-validation-20240429-training"
     )
+    # print(text_validation.columns, len(text_validation))
+    # print(targets_validation.columns, len(text_validation))
+
     text_validation['text'] = clean_text(text_validation['text'])
 
 
-    df = text_validation.merge(targets_validation.set_index('id'), on='id')
+    df = text_validation.merge(targets_validation.set_index('id'), on="id", how="inner")#, on='id')
+    df["text"] = text_validation["text"]
     # print(df.columns)
-    # print(text_validation.columns)
-    # print(targets_validation.columns)
+    
     # Load the model and make predictions
     model = load(Path(__file__).parent / "model.joblib")
     # print(df['text'].head())
