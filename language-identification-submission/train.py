@@ -19,10 +19,10 @@ if __name__ == "__main__":
         "nlpbuw-fsu-sose-24", "language-identification-validation-20240429-training"
     )
     
-    text_train["text"] = clean_text(text_train["text"])
+    text_train['text'] = clean_text(text_train['text'])
     
 
-    df = text_train.merge(targets_train.set_index("id"), on="id")
+    df = text_train.merge(targets_train.set_index('id'), on='id')
 
     # print(df.head(40))
     model = Pipeline([
@@ -30,7 +30,7 @@ if __name__ == "__main__":
        ("classifier", MultinomialNB())
     ])
    
-    model.fit(df["text"], df["lang"])
+    model.fit(df['text'], df['lang'])
 
     # Save the model
     dump(model, Path(__file__).parent / "model.joblib")
