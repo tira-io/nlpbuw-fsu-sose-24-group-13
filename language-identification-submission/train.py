@@ -22,8 +22,9 @@ if __name__ == "__main__":
     text_train["text"] = clean_text(text_train["text"])
     
 
-    df = text_train.join(targets_train.set_index("id"), on="id")
+    df = text_train.merge(targets_train.set_index("id"), on="id")
 
+    # print(df.head(40))
     model = Pipeline([
        ("vectorizer", CountVectorizer(analyzer='word', ngram_range=(1, 2), max_df=0.99, min_df=0.01)),
        ("classifier", MultinomialNB())

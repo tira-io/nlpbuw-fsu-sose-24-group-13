@@ -20,7 +20,7 @@ if __name__ == "__main__":
     text_validation["text"] = clean_text(text_validation["text"])
 
 
-    df = text_validation.join(targets_validation.set_index("id"), on="id")
+    df = text_validation.merge(targets_validation.set_index("id"), on="id")
 
     # Load the model and make predictions
     model = load(Path(__file__).parent / "model.joblib")
