@@ -34,7 +34,7 @@ if __name__ == "__main__":
     # saving the prediction
     output_directory = get_output_directory(str(Path(__file__).parent))
 
-    print(df.head(25))
+    # print(df.head(25))
     df[["id", "lang"]].to_json(
         Path(output_directory) / "predictions.jsonl", orient="records", lines=True
     )
