@@ -3,7 +3,7 @@ from pathlib import Path
 from joblib import load
 from tira.rest_api_client import Client
 from tira.third_party_integrations import get_output_directory
-import preprocessing
+from preprocessing import clean_text
 
 if __name__ == "__main__":
 
@@ -17,7 +17,7 @@ if __name__ == "__main__":
     targets_validation = tira.pd.truths(
         "nlpbuw-fsu-sose-24", "language-identification-validation-20240429-training"
     )
-    text_validation["text"] = preprocessing.clean_text(text_validation["text"])
+    text_validation["text"] = clean_text(text_validation["text"])
 
 
     df = text_validation.join(targets_validation.set_index("id"), on="id")

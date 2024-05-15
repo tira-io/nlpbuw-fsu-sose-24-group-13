@@ -5,7 +5,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import Pipeline
 from tira.rest_api_client import Client
-import preprocessing
+from preprocessing import clean_text
 
 if __name__ == "__main__":
 
@@ -19,7 +19,7 @@ if __name__ == "__main__":
         "nlpbuw-fsu-sose-24", "language-identification-validation-20240429-training"
     )
     
-    text_train["text"] = preprocessing.clean_text(text_train["text"])
+    text_train["text"] = clean_text(text_train["text"])
     
 
     df = text_train.join(targets_train.set_index("id"), on="id")
