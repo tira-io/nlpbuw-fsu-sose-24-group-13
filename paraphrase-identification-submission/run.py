@@ -1,6 +1,6 @@
 from pathlib import Path
 from gensim.models import Word2Vec
-
+import os
 import json
 
 from tira.rest_api_client import Client
@@ -16,7 +16,8 @@ if __name__ == "__main__":
         "nlpbuw-fsu-sose-24", "paraphrase-identification-validation-20240515-training"
     ).set_index("id")
     # print(df.head(10))  
-    model_path = "model.bin"
+    model_file = "model.bin"
+    model_path = os.path.join(str(Path(__file__).parent), model_file)
     word2vec_model = Word2Vec.load(model_path)
 
 
