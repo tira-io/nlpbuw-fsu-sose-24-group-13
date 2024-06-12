@@ -3,6 +3,13 @@ FROM fschlatt/natural-language-processing-exercises:0.0.1
 ADD run.py /code/run.py
 COPY requirements.txt /code/requirements.txt
 
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    build-essential \
+    gcc \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install the dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
