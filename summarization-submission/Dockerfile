@@ -11,6 +11,6 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 # Install the dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r /code/requirements.txt
 
 ENTRYPOINT [ "python3", "/code/run.py" ]
