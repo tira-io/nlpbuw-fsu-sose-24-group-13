@@ -17,6 +17,8 @@ from tira.rest_api_client import Client
 from tira.third_party_integrations import get_output_directory
 import pandas as pd
 
+nltk.download('conll2002')
+
 def load_data():
     tira = Client()
 
@@ -28,17 +30,25 @@ def load_data():
         "nlpbuw-fsu-sose-24", "ner-validation-20240612-training"
     )
     
+    # Print columns to debug
+    print("Text validation columns:", text_validation.columns)
+    print("Targets validation columns:", targets_validation.columns)
+    
     return text_validation, targets_validation
 
 def prepare_data(text_validation, targets_validation):
     sentences = text_validation['sentence'].apply(lambda x: x.split()).tolist()
     labels = targets_validation['tags'].tolist()
-    return sentences, labels
+    
+    # Combine sentences and labels into a format suitable for feature extraction
+    train_sents = []
+    for sent, label in zip(sentences, labels):
+        train_sents.append(list(zip(sent, label)))
+    
+    return train_sents
 
 def word2features(sent, i):
     word = sent[i][0]
-    postag = sent[i][1]
-
     features = {
         'bias': 1.0,
         'word.lower()': word.lower(),
@@ -47,31 +57,23 @@ def word2features(sent, i):
         'word.isupper()': word.isupper(),
         'word.istitle()': word.istitle(),
         'word.isdigit()': word.isdigit(),
-        'postag': postag,
-        'postag[:2]': postag[:2],
     }
     if i > 0:
         word1 = sent[i-1][0]
-        postag1 = sent[i-1][1]
         features.update({
             '-1:word.lower()': word1.lower(),
             '-1:word.istitle()': word1.istitle(),
             '-1:word.isupper()': word1.isupper(),
-            '-1:postag': postag1,
-            '-1:postag[:2]': postag1[:2],
         })
     else:
         features['BOS'] = True
 
     if i < len(sent)-1:
         word1 = sent[i+1][0]
-        postag1 = sent[i+1][1]
         features.update({
             '+1:word.lower()': word1.lower(),
             '+1:word.istitle()': word1.istitle(),
             '+1:word.isupper()': word1.isupper(),
-            '+1:postag': postag1,
-            '+1:postag[:2]': postag1[:2],
         })
     else:
         features['EOS'] = True
@@ -82,19 +84,14 @@ def sent2features(sent):
     return [word2features(sent, i) for i in range(len(sent))]
 
 def sent2labels(sent):
-    return [label for token, postag, label in sent]
+    return [label for word, label in sent]
 
 def sent2tokens(sent):
-    return [token for token, postag, label in sent]
+    return [word for word, label in sent]
 
 if __name__ == "__main__":
     text_validation, targets_validation = load_data()
-    sentences, labels = prepare_data(text_validation, targets_validation)
-
-    # Combine sentences and labels into a format suitable for feature extraction
-    train_sents = []
-    for sent, label in zip(sentences, labels):
-        train_sents.append(list(zip(sent, ['']*len(sent), label)))
+    train_sents = prepare_data(text_validation, targets_validation)
 
     # Feature extraction
     X_train = [sent2features(s) for s in train_sents]
@@ -122,8 +119,8 @@ if __name__ == "__main__":
     predictions.to_json(Path(output_directory) / "predictions.jsonl", orient="records", lines=True)
 
     # Evaluation (optional)
-    labels = list(crf.classes_)
-    labels.remove('O')
-    f1_score = metrics.flat_f1_score(y_train, y_pred, average='weighted', labels=labels)
+    labels_list = list(crf.classes_)
+    labels_list.remove('O')
+    f1_score = metrics.flat_f1_score(y_train, y_pred, average='weighted', labels=labels_list)
     print(f'Validation F1 Score: {f1_score}')
-    print(metrics.flat_classification_report(y_train, y_pred, labels=labels, digits=3))
+    print(metrics.flat_classification_report(y_train, y_pred, labels=labels_list, digits=3))
