@@ -1,7 +1,7 @@
-# docker build -t fschlatt/authorship-verification-trivial:0.0.1 .
+# Use an appropriate base image for natural language processing exercises
 FROM fschlatt/natural-language-processing-exercises:0.0.1
 
-# Use an appropriate base image
+# Install Python 3.9 and system dependencies
 FROM python:3.9-slim
 
 # Install system dependencies
@@ -11,17 +11,13 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-COPY requirements.txt /tmp/requirements.txt
-RUN pip install --no-cache-dir -r /tmp/requirements.txt
+RUN pip install tira rest_api_client pandas sklearn_crfsuite matplotlib nltk
+
+# Add the script to the image
+ADD run.py /code/run.py
 
 # Download NLTK data
 RUN python -m nltk.downloader -d /usr/local/share/nltk_data conll2002
 
-# Create a workspace directory
-WORKDIR /workspace
-
-# Add the source code
-ADD . /workspace
-
-# Set the default command
-CMD ["bash"]
+# Define the entry point
+ENTRYPOINT ["python3", "/code/run.py"]

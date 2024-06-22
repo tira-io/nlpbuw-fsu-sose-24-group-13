@@ -19,7 +19,6 @@ import pandas as pd
 
 # Set NLTK data path to the location where it was downloaded in Dockerfile
 nltk.data.path.append('/usr/local/share/nltk_data')
-nltk.download('conll2002')
 
 def load_data():
     tira = Client()
@@ -40,7 +39,7 @@ def load_data():
     return text_validation, targets_validation
 
 def prepare_data(text_validation, targets_validation):
-    sentences = text_validation['text'].apply(lambda x: x.split()).tolist()
+    sentences = text_validation['sentence'].apply(lambda x: x.split()).tolist()
     if 'tags' in targets_validation.columns:
         labels = targets_validation['tags'].tolist()
     else:
