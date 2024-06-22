@@ -17,6 +17,8 @@ from tira.rest_api_client import Client
 from tira.third_party_integrations import get_output_directory
 import pandas as pd
 
+# Set NLTK data path to the location where it was downloaded in Dockerfile
+nltk.data.path.append('/usr/local/share/nltk_data')
 nltk.download('conll2002')
 
 def load_data():
@@ -33,12 +35,19 @@ def load_data():
     # Print columns to debug
     print("Text validation columns:", text_validation.columns)
     print("Targets validation columns:", targets_validation.columns)
+    print("Sample data from targets_validation:", targets_validation.head())
     
     return text_validation, targets_validation
 
 def prepare_data(text_validation, targets_validation):
-    sentences = text_validation['sentence'].apply(lambda x: x.split()).tolist()
-    labels = targets_validation['tags'].tolist()
+    sentences = text_validation['text'].apply(lambda x: x.split()).tolist()
+    if 'tags' in targets_validation.columns:
+        labels = targets_validation['tags'].tolist()
+    else:
+        # Handle case where column name might be different
+        print("Available columns in targets_validation:", targets_validation.columns)
+        labels = targets_validation.iloc[:, 1].tolist()
+        print("Using alternative column for labels")
     
     # Combine sentences and labels into a format suitable for feature extraction
     train_sents = []
