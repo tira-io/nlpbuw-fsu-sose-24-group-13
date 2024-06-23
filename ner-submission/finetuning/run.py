@@ -39,7 +39,7 @@ def load_data():
     return text_validation, targets_validation
 
 def prepare_data(text_validation, targets_validation):
-    sentences = text_validation['sentence'].apply(lambda x: x.split()).tolist()
+    sentences = text_validation['text'].apply(lambda x: x.split()).tolist()  # Changed 'sentence' to 'text'
     if 'tags' in targets_validation.columns:
         labels = targets_validation['tags'].tolist()
     else:
