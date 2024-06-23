@@ -13,11 +13,11 @@ RUN apt-get update && apt-get install -y \
 # Install Python dependencies
 RUN pip install tira rest_api_client pandas sklearn_crfsuite matplotlib nltk
 
-# Add the script to the image
-ADD run.py /code/run.py
-
 # Download NLTK data
 RUN python -m nltk.downloader -d /usr/local/share/nltk_data conll2002
+
+# Add the script to the image
+ADD run.py /code/run.py
 
 # Define the entry point
 ENTRYPOINT ["python3", "/code/run.py"]
