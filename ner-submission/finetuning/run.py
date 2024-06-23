@@ -32,6 +32,10 @@ def prepare_data(text_validation, targets_validation):
     
     if 'tags' in targets_validation.columns:
         labels = targets_validation['tags'].tolist()
+    elif 'sentence' in targets_validation.columns:
+        # Assuming 'sentence' contains the labels if 'tags' are missing
+        print("Warning: 'tags' column not found in targets_validation. Using 'sentence' as labels, which is not expected.")
+        labels = targets_validation['sentence'].apply(lambda x: x.split()).tolist()
     elif 'text' in targets_validation.columns:
         print("Warning: 'tags' column not found in targets_validation. Using 'text' as labels, which is not expected.")
         labels = targets_validation['text'].apply(lambda x: x.split()).tolist()
@@ -89,6 +93,12 @@ def sent2tokens(sent):
 
 if __name__ == "__main__":
     text_validation, targets_validation = load_data()
+    
+    # Check columns in targets_validation and print a debug message if columns are unexpected
+    expected_columns = ['id', 'tags']
+    if not all(col in targets_validation.columns for col in expected_columns):
+        print(f"Unexpected columns in targets_validation: {targets_validation.columns}")
+    
     train_sents = prepare_data(text_validation, targets_validation)
 
     # Feature extraction
