@@ -32,6 +32,9 @@ def prepare_data(text_validation, targets_validation):
     
     if 'tags' in targets_validation.columns:
         labels = targets_validation['tags'].tolist()
+    elif 'text' in targets_validation.columns:
+        print("Warning: 'tags' column not found in targets_validation. Using 'text' as labels, which is not expected.")
+        labels = targets_validation['text'].apply(lambda x: x.split()).tolist()
     else:
         raise KeyError("The expected 'tags' column was not found in targets_validation DataFrame")
     
