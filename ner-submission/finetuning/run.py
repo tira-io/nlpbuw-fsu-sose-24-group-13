@@ -22,10 +22,13 @@ def load_data():
     return text_validation, targets_validation
 
 def prepare_data(text_validation, targets_validation):
+    # Check for the correct column name
     if 'sentence' in text_validation.columns:
         sentences = text_validation['sentence'].apply(lambda x: x.split()).tolist()
+    elif 'text' in text_validation.columns:
+        sentences = text_validation['text'].apply(lambda x: x.split()).tolist()
     else:
-        raise KeyError("The expected 'sentence' column was not found in text_validation DataFrame")
+        raise KeyError("Neither 'sentence' nor 'text' column found in text_validation DataFrame")
     
     if 'tags' in targets_validation.columns:
         labels = targets_validation['tags'].tolist()
