@@ -1,5 +1,0 @@
-tira
-pandas
-sklearn-crfsuite
-matplotlib
-nltk

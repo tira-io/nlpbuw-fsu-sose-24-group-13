@@ -1,37 +1,20 @@
 import matplotlib.pyplot as plt
 plt.style.use('ggplot')
 from itertools import chain
-
-import nltk
-import sklearn
-import scipy.stats
-from sklearn.metrics import make_scorer
-from sklearn.model_selection import cross_val_score, RandomizedSearchCV
-
+import pandas as pd
 import sklearn_crfsuite
-from sklearn_crfsuite import scorers
 from sklearn_crfsuite import metrics
-
-from pathlib import Path
 from tira.rest_api_client import Client
 from tira.third_party_integrations import get_output_directory
-import pandas as pd
-
-# Set NLTK data path to the location where it was downloaded in Dockerfile
-nltk.data.path.append('/usr/local/share/nltk_data')
+from pathlib import Path
 
 def load_data():
     tira = Client()
 
-    # loading validation data (automatically replaced by test data when run on tira)
-    text_validation = tira.pd.inputs(
-        "nlpbuw-fsu-sose-24", "ner-validation-20240612-training"
-    )
-    targets_validation = tira.pd.truths(
-        "nlpbuw-fsu-sose-24", "ner-validation-20240612-training"
-    )
+    # Loading validation data (automatically replaced by test data when run on tira)
+    text_validation = tira.pd.inputs("nlpbuw-fsu-sose-24", "ner-validation-20240612-training")
+    targets_validation = tira.pd.truths("nlpbuw-fsu-sose-24", "ner-validation-20240612-training")
     
-    # Print columns to debug
     print("Text validation columns:", text_validation.columns)
     print("Targets validation columns:", targets_validation.columns)
     print("Sample data from targets_validation:", targets_validation.head())
@@ -41,18 +24,13 @@ def load_data():
 def prepare_data(text_validation, targets_validation):
     if 'sentence' in text_validation.columns:
         sentences = text_validation['sentence'].apply(lambda x: x.split()).tolist()
-    elif 'text' in text_validation.columns:
-        sentences = text_validation['text'].apply(lambda x: x.split()).tolist()
     else:
-        raise KeyError("Neither 'sentence' nor 'text' column found in text_validation DataFrame")
+        raise KeyError("The expected 'sentence' column was not found in text_validation DataFrame")
     
     if 'tags' in targets_validation.columns:
         labels = targets_validation['tags'].tolist()
     else:
-        # Handle case where column name might be different
-        print("Available columns in targets_validation:", targets_validation.columns)
-        labels = targets_validation.iloc[:, 1].tolist()
-        print("Using alternative column for labels")
+        raise KeyError("The expected 'tags' column was not found in targets_validation DataFrame")
     
     # Combine sentences and labels into a format suitable for feature extraction
     train_sents = []
