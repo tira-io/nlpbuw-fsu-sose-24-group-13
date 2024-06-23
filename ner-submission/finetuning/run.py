@@ -11,7 +11,7 @@ from pathlib import Path
 def load_data():
     tira = Client()
 
-    # Loading validation data (automatically replaced by test data when run on tira)
+    # Loading validation data (automatically replaced by test data when run on TIRA)
     text_validation = tira.pd.inputs("nlpbuw-fsu-sose-24", "ner-validation-20240612-training")
     targets_validation = tira.pd.truths("nlpbuw-fsu-sose-24", "ner-validation-20240612-training")
     
