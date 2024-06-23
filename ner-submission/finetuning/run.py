@@ -114,7 +114,7 @@ if __name__ == "__main__":
 
     # Save predictions
     output_directory = get_output_directory(str(Path(__file__).parent))
-    predictions.to_json(Path(output_directory) / "predictions.jsonl", orient="records", lines=True)
+    predictions.to_json(Path(output_directory) / "predictions.jsonl", orient="records", lines=True, force_ascii=False)
 
     # Evaluation (optional)
     labels_list = list(crf.classes_)
