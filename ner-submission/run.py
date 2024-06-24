@@ -5,12 +5,12 @@ from sklearn_crfsuite import metrics
 from tira.rest_api_client import Client
 from tira.third_party_integrations import get_output_directory
 from pathlib import Path
-import json
 
 plt.style.use('ggplot')
 
 def load_data():
     tira = Client()
+    # Loading validation data (automatically replaced by test data when run on TIRA)
     text_validation = tira.pd.inputs("nlpbuw-fsu-sose-24", "ner-validation-20240612-training")
     targets_validation = tira.pd.truths("nlpbuw-fsu-sose-24", "ner-validation-20240612-training")
     return text_validation, targets_validation
@@ -66,7 +66,8 @@ def sent2tokens(sent):
     return [word for word, label in sent]
 
 if __name__ == "__main__":
-    text_validation, targets_validation = load_data()
+    tira = Client()  # Aligning with baseline
+    text_validation, targets_validation = load_data()  # Aligning with baseline
 
     train_sents = prepare_data(text_validation, targets_validation)
 
@@ -85,11 +86,13 @@ if __name__ == "__main__":
     X_val = [sent2features(s) for s in train_sents]
     y_pred = crf.predict(X_val)
 
+    # Creating DataFrame to align with saving predictions
     predictions = pd.DataFrame({'id': text_validation['id'], 'tags': y_pred})
 
-    output_directory = get_output_directory(str(Path(__file__).parent))
-    predictions.to_json(Path(output_directory) / "predictions.jsonl", orient="records", lines=True, force_ascii=False)
+    output_directory = get_output_directory(str(Path(__file__).parent))  # Aligning with baseline
+    predictions.to_json(Path(output_directory) / "predictions.jsonl", orient="records", lines=True, force_ascii=False)  # Aligning with baseline
 
+    # Optional: Evaluation
     labels_list = list(crf.classes_)
     labels_list.remove('O')
     f1_score = metrics.flat_f1_score(y_train, y_pred, average='weighted', labels=labels_list)
