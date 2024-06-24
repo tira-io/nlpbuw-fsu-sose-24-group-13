@@ -82,7 +82,11 @@ if __name__ == "__main__":
     # Debug: Print columns of targets_validation
     print("Targets validation columns:", targets_validation.columns)
 
-    train_sents = prepare_data(text_validation, targets_validation)
+    try:
+        train_sents = prepare_data(text_validation, targets_validation)
+    except KeyError as e:
+        print(f"Data preparation failed: {e}")
+        exit(1)
 
     X_train = [sent2features(s) for s in train_sents]
     y_train = [sent2labels(s) for s in train_sents]
