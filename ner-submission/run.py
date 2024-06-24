@@ -5,6 +5,7 @@ from sklearn_crfsuite import metrics
 from tira.rest_api_client import Client
 from tira.third_party_integrations import get_output_directory
 from pathlib import Path
+import json
 
 plt.style.use('ggplot')
 
@@ -16,8 +17,17 @@ def load_data():
     return text_validation, targets_validation
 
 def prepare_data(text_validation, targets_validation):
+    # Debug: Print columns of targets_validation
+    print("Targets validation columns:", targets_validation.columns)
+    
     sentences = text_validation['sentence'].apply(lambda x: x.split()).tolist()
-    labels = targets_validation['tags'].tolist()
+    
+    # Check if 'tags' column is present
+    if 'tags' in targets_validation.columns:
+        labels = targets_validation['tags'].tolist()
+    else:
+        raise KeyError("Column 'tags' not found in targets_validation DataFrame")
+    
     train_sents = []
     for sent, label in zip(sentences, labels):
         train_sents.append(list(zip(sent, label)))
@@ -66,8 +76,11 @@ def sent2tokens(sent):
     return [word for word, label in sent]
 
 if __name__ == "__main__":
-    tira = Client()  # Aligning with baseline
-    text_validation, targets_validation = load_data()  # Aligning with baseline
+    tira = Client()
+    text_validation, targets_validation = load_data()
+
+    # Debug: Print columns of targets_validation
+    print("Targets validation columns:", targets_validation.columns)
 
     train_sents = prepare_data(text_validation, targets_validation)
 
@@ -89,8 +102,8 @@ if __name__ == "__main__":
     # Creating DataFrame to align with saving predictions
     predictions = pd.DataFrame({'id': text_validation['id'], 'tags': y_pred})
 
-    output_directory = get_output_directory(str(Path(__file__).parent))  # Aligning with baseline
-    predictions.to_json(Path(output_directory) / "predictions.jsonl", orient="records", lines=True, force_ascii=False)  # Aligning with baseline
+    output_directory = get_output_directory(str(Path(__file__).parent))
+    predictions.to_json(Path(output_directory) / "predictions.jsonl", orient="records", lines=True, force_ascii=False)
 
     # Optional: Evaluation
     labels_list = list(crf.classes_)
