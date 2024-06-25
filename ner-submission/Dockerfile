@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-RUN pip install tira rest_api_client pandas sklearn_crfsuite matplotlib seqeval
+RUN pip install tira rest_api_client pandas sklearn_crfsuite matplotlib seqeval evaluate
 
 # Add the script to the image
 ADD run.py /code/run.py
