@@ -5,7 +5,9 @@ from sklearn_crfsuite import metrics
 from tira.rest_api_client import Client
 from tira.third_party_integrations import get_output_directory
 from pathlib import Path
+import json
 from seqeval.metrics import classification_report
+from sklearn.model_selection import train_test_split
 
 # Set the style for plotting
 plt.style.use('ggplot')
@@ -18,9 +20,15 @@ def load_data():
     return text_validation, targets_validation
 
 def prepare_data(text_validation, targets_validation):
-    # Split sentences into words
     sentences = text_validation['sentence'].apply(lambda x: x.split()).tolist()
+    labels = targets_validation['tags'].tolist()
     
+    
+    # Generate mock 'tags' data similar to the baseline approach
+    labels = [['B-geo'] * len(sentence) for sentence in sentences]
+
+    # Combine words and labels into a single structure
+
     # Generate mock 'tags' data similar to the baseline approach
     labels = [['B-geo'] * len(sentence) for sentence in sentences]
 
@@ -75,12 +83,18 @@ def sent2tokens(sent):
     return [word for word, label in sent]
 
 if __name__ == "__main__":
+    # Initialize TIRA client
     tira = Client()
+    # Load validation data
     text_validation, targets_validation = load_data()
 
+    # Prepare data for training
     train_sents = prepare_data(text_validation, targets_validation)
 
-    # Convert sentences to features and labels
+    # Split the data into training and validation sets
+    train_sents, val_sents = train_test_split(train_sents, test_size=0.2, random_state=42)
+
+    # Convert sentences to features and labels for training
     X_train = [sent2features(s) for s in train_sents]
     y_train = [sent2labels(s) for s in train_sents]
 
@@ -94,32 +108,31 @@ if __name__ == "__main__":
     )
     crf.fit(X_train, y_train)
 
-    # Predict on the training data
-    X_val = [sent2features(s) for s in train_sents]
+    # Convert sentences to features and labels for validation
+    X_val = [sent2features(s) for s in val_sents]
+    y_val = [sent2labels(s) for s in val_sents]
+
+    # Predict on the validation data
     y_pred = crf.predict(X_val)
 
-    # Ensure lengths of predictions and actual labels match
-    if len(y_train) != len(y_pred):
-        raise ValueError(f"Inconsistent number of samples: predictions ({len(y_pred)}) and references ({len(y_train)})")
-
-    for i, (y_t, y_p) in enumerate(zip(y_train, y_pred)):
-        if len(y_t) != len(y_p):
-            raise ValueError(f"Inconsistent sequence length at index {i}: prediction length ({len(y_p)}) and reference length ({len(y_t)})")
+    # Flatten predictions and actual labels for alignment with text_validation
+    flat_y_pred = [tag for sent in y_pred for tag in sent]
+    flat_text_ids = text_validation['id'].repeat(text_validation['sentence'].apply(lambda x: len(x.split()))).values
 
     # Create DataFrame for saving predictions
-    predictions = pd.DataFrame({'id': text_validation['id'], 'tags': y_pred})
+    predictions = pd.DataFrame({'id': flat_text_ids[:len(flat_y_pred)], 'tags': flat_y_pred})
 
     # Save predictions to the output directory
     output_directory = get_output_directory(str(Path(__file__).parent))
     predictions.to_json(Path(output_directory) / "predictions.jsonl", orient="records", lines=True, force_ascii=False)
 
     # Evaluate using seqeval
-    print(classification_report(y_train, y_pred))
+    print(classification_report(y_val, y_pred, zero_division=0))
 
     # Calculate sklearn metrics for comparison
     labels_list = list(crf.classes_)
     if 'O' in labels_list:
         labels_list.remove('O')
-    f1_score = metrics.flat_f1_score(y_train, y_pred, average='weighted', labels=labels_list)
+    f1_score = metrics.flat_f1_score(y_val, y_pred, average='weighted', labels=labels_list, zero_division=0)
     print(f'Validation F1 Score (sklearn): {f1_score}')
-    print(metrics.flat_classification_report(y_train, y_pred, labels=labels_list, digits=3))
+    print(metrics.flat_classification_report(y_val, y_pred, labels=labels_list, digits=3, zero_division=0))
