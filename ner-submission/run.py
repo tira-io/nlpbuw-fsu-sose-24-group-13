@@ -15,8 +15,19 @@ def load_data():
     return text_validation, targets_validation
 
 def prepare_data(text_validation, targets_validation):
+    # Debugging: print the first few rows of the dataframes to check their structure
+    print("Text Validation DataFrame:")
+    print(text_validation.head())
+    print("\nTargets Validation DataFrame:")
+    print(targets_validation.head())
+    print("\nTargets Validation Columns:")
+    print(targets_validation.columns)
+    
+    # Check if 'tags' column exists in targets_validation
+    if 'tags' not in targets_validation.columns:
+        raise KeyError("The 'tags' column is missing from the targets_validation DataFrame.")
+    
     sentences = text_validation['sentence'].apply(lambda x: x.split()).tolist()
-    # Generate labels data from the targets_validation
     labels = targets_validation['tags'].tolist()
     
     train_sents = []
@@ -95,7 +106,14 @@ if __name__ == "__main__":
     predictions = pd.DataFrame({'id': text_validation['id'], 'tags': y_pred})
     
     output_directory = get_output_directory(str(Path(__file__).parent))
-    predictions.to_json(Path(output_directory) / "predictions.jsonl", orient="records", lines=True)
+    print(f"Output Directory: {output_directory}")  # Debugging: Print output directory
+    
+    try:
+        output_path = Path(output_directory) / "predictions.jsonl"
+        predictions.to_json(output_path, orient="records", lines=True)
+        print(f"Predictions saved to: {output_path}")  # Debugging: Confirm save path
+    except Exception as e:
+        print(f"Failed to save predictions: {e}")  # Debugging: Print any exceptions during save
     
     # Evaluate model using seqeval
     seqeval = evaluate.load("seqeval")
