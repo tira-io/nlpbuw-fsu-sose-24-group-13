@@ -52,7 +52,7 @@ if __name__ == "__main__":
         true_labels.append(tags)
 
     # Evaluate
-    #print(classification_report(true_labels, predictions))
+    print(classification_report(true_labels, predictions))
 
     # Save predictions
     output_directory = get_output_directory(str(Path(__file__).parent))
