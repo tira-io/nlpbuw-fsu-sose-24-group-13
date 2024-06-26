@@ -1,23 +1,11 @@
+import json
+import pandas as pd
 from pathlib import Path
 from tira.rest_api_client import Client
 from tira.third_party_integrations import get_output_directory
-import pandas as pd
 import sklearn_crfsuite
-
-def load_data():
-    tira = Client()
-    text_validation = tira.pd.inputs("nlpbuw-fsu-sose-24", "ner-validation-20240612-training")
-    targets_validation = tira.pd.truths("nlpbuw-fsu-sose-24", "ner-validation-20240612-training")
-    return text_validation, targets_validation
-
-def prepare_data(text_validation, targets_validation):
-    sentences = text_validation['sentence'].apply(lambda x: x.split()).tolist()
-    labels = targets_validation['tags'].tolist()
-    
-    train_sents = []
-    for sent, label in zip(sentences, labels):
-        train_sents.append(list(zip(sent, label)))
-    return train_sents
+from sklearn_crfsuite import metrics
+from sklearn.model_selection import train_test_split
 
 def word2features(sent, i):
     word = sent[i][0]
@@ -56,31 +44,67 @@ def sent2features(sent):
     return [word2features(sent, i) for i in range(len(sent))]
 
 def sent2labels(sent):
-    return [label for word, label in sent]
+    return [label for token, label in sent]
 
-if __name__ == "__main__":
-    text_validation, targets_validation = load_data()
-    train_sents = prepare_data(text_validation, targets_validation)
-    
-    X_train = [sent2features(s) for s in train_sents]
-    y_train = [sent2labels(s) for s in train_sents]
-    
+def sent2tokens(sent):
+    return [token for token, label in sent]
+
+def load_data():
+    tira = Client()
+    text_data = tira.pd.inputs(
+        "nlpbuw-fsu-sose-24", "ner-validation-20240612-training"
+    )
+    targets_data = tira.pd.truths(
+        "nlpbuw-fsu-sose-24", "ner-validation-20240612-training"
+    )
+
+    data = []
+    for i in range(len(text_data)):
+        tokens = text_data.iloc[i]['sentence'].split()
+        tags = targets_data.iloc[i]['tags']
+        data.append([(token, tag) for token, tag in zip(tokens, tags)])
+
+    return data
+
+def train_crf_model(train_data):
+    X_train = [sent2features(s) for s in train_data]
+    y_train = [sent2labels(s) for s in train_data]
+
     crf = sklearn_crfsuite.CRF(
         algorithm='lbfgs',
         c1=0.1,
         c2=0.1,
         max_iterations=100,
-        all_possible_transitions=True
+        all_possible_transitions=False
     )
     crf.fit(X_train, y_train)
-    
-    X_val = [sent2features(s) for s in train_sents]
-    y_pred = crf.predict(X_val)
-    
-    predictions = pd.DataFrame({'id': text_validation['id'], 'tags': y_pred})
-    
+    return crf
+
+def predict(crf, sentences):
+    X_test = [sent2features(s) for s in sentences]
+    y_pred = crf.predict(X_test)
+    return y_pred
+
+def save_predictions(predictions, output_path):
+    output_data = []
+    for idx, pred in enumerate(predictions):
+        output_data.append({"id": idx, "tags": pred})
+    with open(output_path, 'w') as f:
+        for entry in output_data:
+            f.write(json.dumps(entry) + '\n')
+
+if __name__ == "__main__":
+    # Load and prepare data
+    data = load_data()
+    train_data, val_data = train_test_split(data, test_size=0.2, random_state=42)
+
+    # Train CRF model
+    crf = train_crf_model(train_data)
+
+    # Predict on validation data
+    val_sentences = [sent2tokens(s) for s in val_data]
+    y_pred = predict(crf, val_sentences)
+
+    # Save predictions
     output_directory = get_output_directory(str(Path(__file__).parent))
-    output_path = Path(output_directory) / "predictions.jsonl"
-    predictions.to_json(output_path, orient="records", lines=True)
-    
-    print("Predictions saved successfully.")
+    save_predictions(y_pred, Path(output_directory) / "predictions.jsonl")
