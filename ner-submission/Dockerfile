@@ -2,9 +2,11 @@
 FROM fschlatt/natural-language-processing-exercises:0.0.1
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
     build-essential \
-    curl \
+    gcc \
+    g++ \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
