@@ -3,7 +3,6 @@ from tira.rest_api_client import Client
 from tira.third_party_integrations import get_output_directory
 import pandas as pd
 import sklearn_crfsuite
-from sklearn_crfsuite import metrics
 
 def load_data():
     tira = Client()
@@ -12,11 +11,6 @@ def load_data():
     return text_validation, targets_validation
 
 def prepare_data(text_validation, targets_validation):
-    if 'tags' not in targets_validation.columns:
-        sentences = text_validation['sentence'].apply(lambda x: x.split()).tolist()
-        dummy_labels = [['O'] * len(sent) for sent in sentences]
-        targets_validation['tags'] = dummy_labels
-    
     sentences = text_validation['sentence'].apply(lambda x: x.split()).tolist()
     labels = targets_validation['tags'].tolist()
     
