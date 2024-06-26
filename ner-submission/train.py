@@ -1,14 +1,16 @@
 from pathlib import Path
-from joblib import load
-from tira.rest_api_client import Client
-from tira.third_party_integrations import get_output_directory
+from joblib import dump
 import pandas as pd
+import sklearn_crfsuite
+from sklearn_crfsuite import metrics
+from tira.rest_api_client import Client
 
-def preprocess_data(text_data):
+def preprocess_data(text_data, labels_data):
     data = []
     for i in range(len(text_data)):
         sentence = text_data.iloc[i]['sentence'].split()
-        data.append(sentence)
+        labels = labels_data.iloc[i]['tags']
+        data.append((sentence, labels))
     return data
 
 def extract_features(sentence, i):
@@ -47,26 +49,30 @@ def extract_features(sentence, i):
 def sent2features(sentence):
     return [extract_features(sentence, i) for i in range(len(sentence))]
 
+def sent2labels(sentence):
+    return [label for label in sentence]
+
 if __name__ == "__main__":
     tira = Client()
 
     # Load the data
-    text_validation = tira.pd.inputs("nlpbuw-fsu-sose-24", "ner-validation-20240612-training")
+    text_train = tira.pd.inputs("nlpbuw-fsu-sose-24", "ner-training-20240612-training")
+    targets_train = tira.pd.truths("nlpbuw-fsu-sose-24", "ner-training-20240612-training")
 
     # Preprocess data
-    val_data = preprocess_data(text_validation)
-    X_val = [sent2features(s) for s in val_data]
+    train_data = preprocess_data(text_train, targets_train)
+    X_train = [sent2features(s) for s, t in train_data]
+    y_train = [t for s, t in train_data]
 
-    # Load the model
-    model = load(Path(__file__).parent / "model.joblib")
+    # Train CRF model
+    crf = sklearn_crfsuite.CRF(
+        algorithm='lbfgs',
+        c1=0.1,
+        c2=0.1,
+        max_iterations=100,
+        all_possible_transitions=True
+    )
+    crf.fit(X_train, y_train)
 
-    # Predict
-    y_pred = model.predict(X_val)
-
-    # Save predictions
-    predictions = text_validation.copy()
-    predictions['tags'] = [list(x) for x in y_pred]
-    predictions = predictions[['id', 'tags']]
-    
-    output_directory = get_output_directory(str(Path(__file__).parent))
-    predictions.to_json(Path(output_directory) / "predictions.jsonl", orient="records", lines=True)
+    # Save the model
+    dump(crf, Path(__file__).parent / "model.joblib")
